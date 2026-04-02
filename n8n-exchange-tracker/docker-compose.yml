@@ -1,0 +1,306 @@
+version: '3.8'
+
+# ┌─────────────────────────────────────────────────────────┐
+# │              n8n Full Stack - Local Dev                 │
+# │                                                         │
+# │  서비스 목록:                                            │
+# │  • http://localhost       → 대시보드 (Nginx)             │
+# │  • http://localhost:5678  → n8n                         │
+# │  • http://localhost:3000  → Grafana   (admin / 7345)    │
+# │  • http://localhost:8080  → Adminer   (root  / 7345)    │
+# │  • http://localhost:9090  → Prometheus                  │
+# │  • localhost:3306         → MySQL     (root  / 7345)    │
+# └─────────────────────────────────────────────────────────┘
+
+networks:
+  n8n-net:
+    driver: bridge
+    name: n8n-net
+
+volumes:
+  mysql_data:
+  redis_data:
+  n8n_data:
+  grafana_data:
+  prometheus_data:
+
+services:
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #  DATABASE
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  mysql:
+    image: mysql:8.0
+    container_name: n8n-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "7345"
+      MYSQL_DATABASE: n8n
+      MYSQL_USER: n8n
+      MYSQL_PASSWORD: "7345"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - n8n-net
+    ports:
+      - "3307:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p7345"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #  CACHE / QUEUE
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  redis:
+    image: redis:7-alpine
+    container_name: n8n-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - n8n-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #  N8N - MAIN (웹 UI + 웹훅 처리)
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n-main
+    restart: unless-stopped
+    environment:
+      # Database
+      DB_TYPE: mysqldb
+      DB_MYSQLDB_HOST: mysql
+      DB_MYSQLDB_PORT: "3306"
+      DB_MYSQLDB_DATABASE: n8n
+      DB_MYSQLDB_USER: n8n
+      DB_MYSQLDB_PASSWORD: "7345"
+      # Queue
+      QUEUE_BULL_REDIS_HOST: redis
+      QUEUE_BULL_REDIS_PORT: "6379"
+      EXECUTIONS_MODE: queue
+      # General
+      N8N_HOST: localhost
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: "http://localhost:5678/"
+      GENERIC_TIMEZONE: Asia/Seoul
+      TZ: Asia/Seoul
+      # Logging
+      N8N_LOG_LEVEL: info
+      N8N_LOG_OUTPUT: console
+      # Metrics (Prometheus)
+      N8N_METRICS: "true"
+      N8N_METRICS_INCLUDE_WORKFLOW_ID_LABEL: "true"
+      N8N_METRICS_INCLUDE_NODE_TYPE_LABEL: "true"
+      N8N_METRICS_INCLUDE_CREDENTIAL_TYPE_LABEL: "true"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    ports:
+      - "5678:5678"
+    networks:
+      - n8n-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #  N8N - WORKER (워크플로우 실행 전담)
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  n8n-worker:
+    image: n8nio/n8n:latest
+    container_name: n8n-worker
+    restart: unless-stopped
+    command: worker
+    environment:
+      DB_TYPE: mysqldb
+      DB_MYSQLDB_HOST: mysql
+      DB_MYSQLDB_PORT: "3306"
+      DB_MYSQLDB_DATABASE: n8n
+      DB_MYSQLDB_USER: n8n
+      DB_MYSQLDB_PASSWORD: "7345"
+      QUEUE_BULL_REDIS_HOST: redis
+      QUEUE_BULL_REDIS_PORT: "6379"
+      EXECUTIONS_MODE: queue
+      GENERIC_TIMEZONE: Asia/Seoul
+      TZ: Asia/Seoul
+      N8N_LOG_LEVEL: info
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - n8n-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      n8n:
+        condition: service_started
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #  DB 관리 UI
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  adminer:
+    image: adminer:latest
+    container_name: n8n-adminer
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+      ADMINER_DESIGN: dracula
+    ports:
+      - "8080:8080"
+    networks:
+      - n8n-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #  모니터링 - Prometheus
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: n8n-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - n8n-net
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #  모니터링 - Grafana
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  grafana:
+    image: grafana/grafana:latest
+    container_name: n8n-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: "7345"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_HTTP_PORT: "3001"
+      GF_FEATURE_TOGGLES_ENABLE: "publicDashboards"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3001:3001"
+    networks:
+      - n8n-net
+    depends_on:
+      - prometheus
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #  Exporter - 시스템 메트릭
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: n8n-node-exporter
+    restart: unless-stopped
+    command:
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro,rslave
+    networks:
+      - n8n-net
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #  Exporter - MySQL 메트릭
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  mysql-exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: n8n-mysql-exporter
+    restart: unless-stopped
+    command:
+      - "--mysqld.address=mysql:3306"
+      - "--mysqld.username=root"
+    environment:
+      MYSQLD_EXPORTER_PASSWORD: "7345"
+    networks:
+      - n8n-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #  Exporter - Redis 메트릭
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    container_name: n8n-redis-exporter
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+    networks:
+      - n8n-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #  Exporter - Docker 컨테이너 메트릭
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: n8n-cadvisor
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg
+    networks:
+      - n8n-net
+
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  #  Nginx - 통합 랜딩 대시보드 (port 80)
+  # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  nginx:
+    image: nginx:alpine
+    container_name: n8n-nginx
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/html:/usr/share/nginx/html:ro
+    ports:
+      - "8888:80"
+    networks:
+      - n8n-net
+    depends_on:
+      - n8n
+      - grafana
+      - adminer
+      - prometheus

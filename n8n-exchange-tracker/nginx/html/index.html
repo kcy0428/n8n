@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>n8n Stack Dashboard</title>
+  <style>
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --border:    #2a2d3e;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --accent:    #6366f1;
+
+      --green:  #22c55e;
+      --blue:   #3b82f6;
+      --purple: #a855f7;
+      --orange: #f97316;
+      --red:    #ef4444;
+      --cyan:   #06b6d4;
+      --pink:   #ec4899;
+      --yellow: #eab308;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      padding: 32px 24px 64px;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .logo-icon {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #e2e8f0, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-top: 4px;
+    }
+
+    /* ── Status bar ── */
+    .status-bar {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    .dot.green  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .dot.blue   { background: var(--blue);  box-shadow: 0 0 6px var(--blue);  }
+    .dot.purple { background: var(--purple);box-shadow: 0 0 6px var(--purple);}
+    .dot.orange { background: var(--orange);box-shadow: 0 0 6px var(--orange);}
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    /* ── Section ── */
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+      padding-left: 4px;
+    }
+
+    /* ── Grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--card-color, var(--accent));
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: var(--card-color, var(--accent));
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .card-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      background: color-mix(in srgb, var(--card-color, var(--accent)) 15%, transparent);
+    }
+    .card-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--card-color, var(--accent)) 15%, transparent);
+      color: var(--card-color, var(--accent));
+    }
+    .card-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .card-desc {
+      font-size: 0.83rem;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-port {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-family: 'Courier New', monospace;
+      background: rgba(255,255,255,0.05);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .card-link {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--card-color, var(--accent));
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .card-link::after { content: '→'; }
+
+    /* ── Info section ── */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+    .info-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .info-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .info-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .info-sub {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ── Credentials table ── */
+    .cred-table {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 40px;
+    }
+    .cred-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .cred-table th {
+      background: rgba(255,255,255,0.04);
+      padding: 12px 20px;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .cred-table td {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      font-size: 0.88rem;
+    }
+    .cred-table td:last-child {
+      font-family: 'Courier New', monospace;
+      color: var(--yellow);
+    }
+    .svc-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <h1>n8n Stack Dashboard</h1>
+    </div>
+    <p class="subtitle">로컬 자동화 스택 · Zorin OS · Docker Compose · <a href="http://localhost:8888" style="color:var(--accent)">http://localhost:8888</a></p>
+  </header>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <div class="status-item"><span class="dot green"></span> 자동화 실행 중</div>
+    <div class="status-item"><span class="dot blue"></span> 데이터베이스 연결됨</div>
+    <div class="status-item"><span class="dot purple"></span> 모니터링 활성</div>
+    <div class="status-item"><span class="dot orange"></span> 큐 처리 중</div>
+  </div>
+
+  <!-- Stack Info -->
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-label">총 컨테이너</div>
+      <div class="info-value">12</div>
+      <div class="info-sub">Docker 서비스</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">타임존</div>
+      <div class="info-value" style="font-size:1.1rem">Asia/Seoul</div>
+      <div class="info-sub">KST (UTC+9)</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">n8n 버전</div>
+      <div class="info-value" style="font-size:1.1rem">latest</div>
+      <div class="info-sub">MySQL 백엔드</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">메트릭 보존</div>
+      <div class="info-value">30d</div>
+      <div class="info-sub">Prometheus TSDB</div>
+    </div>
+  </div>
+
+  <!-- Main Services -->
+  <div class="section-title">핵심 서비스</div>
+  <div class="grid">
+
+    <a class="card" href="http://localhost:5678" target="_blank" style="--card-color: #6366f1">
+      <div class="card-header">
+        <div class="card-icon">⚡</div>
+        <span class="card-badge">AUTOMATION</span>
+      </div>
+      <div class="card-name">n8n</div>
+      <div class="card-desc">워크플로우 자동화 엔진. 400+ 서비스 연동, AI Agent, 스케줄러, 웹훅 처리.</div>
+      <div class="card-footer">
+        <span class="card-port">:5678</span>
+        <span class="card-link">열기</span>
+      </div>
+    </a>
+
+    <a class="card" href="http://localhost:3001" target="_blank" style="--card-color: #f97316">
+      <div class="card-header">
+        <div class="card-icon">📊</div>
+        <span class="card-badge">MONITORING</span>
+      </div>
+      <div class="card-name">Grafana</div>
+      <div class="card-desc">시스템 메트릭 시각화 대시보드. CPU, 메모리, MySQL, Redis, 컨테이너 현황.</div>
+      <div class="card-footer">
+        <span class="card-port">:3001</span>
+        <span class="card-link">열기</span>
+      </div>
+    </a>
+
+    <a class="card" href="http://localhost:8080" target="_blank" style="--card-color: #22c55e">
+      <div class="card-header">
+        <div class="card-icon">🗄️</div>
+        <span class="card-badge">DATABASE</span>
+      </div>
+      <div class="card-name">Adminer</div>
+      <div class="card-desc">MySQL 웹 관리 UI. 테이블 조회/편집, SQL 실행, 데이터 import/export.</div>
+      <div class="card-footer">
+        <span class="card-port">:8080</span>
+        <span class="card-link">열기</span>
+      </div>
+    </a>
+
+    <a class="card" href="http://localhost:9090" target="_blank" style="--card-color: #ef4444">
+      <div class="card-header">
+        <div class="card-icon">🔥</div>
+        <span class="card-badge">METRICS</span>
+      </div>
+      <div class="card-name">Prometheus</div>
+      <div class="card-desc">메트릭 수집 & 저장 엔진. PromQL 쿼리, 알림 룰, 30일 데이터 보존.</div>
+      <div class="card-footer">
+        <span class="card-port">:9090</span>
+        <span class="card-link">열기</span>
+      </div>
+    </a>
+
+  </div>
+
+  <!-- Infrastructure -->
+  <div class="section-title">인프라 서비스</div>
+  <div class="grid">
+
+    <div class="card" style="--card-color: #3b82f6; cursor: default;">
+      <div class="card-header">
+        <div class="card-icon">🐬</div>
+        <span class="card-badge">DATABASE</span>
+      </div>
+      <div class="card-name">MySQL 8.0</div>
+      <div class="card-desc">n8n 백엔드 DB. 워크플로우, 실행 이력, 자격증명 저장. 외부 도구로 직접 접속 가능.</div>
+      <div class="card-footer">
+        <span class="card-port">:3306</span>
+        <span style="font-size:0.78rem; color:var(--muted)">TCP 직접 접속</span>
+      </div>
+    </div>
+
+    <div class="card" style="--card-color: #ef4444; cursor: default;">
+      <div class="card-header">
+        <div class="card-icon">⚡</div>
+        <span class="card-badge">CACHE · QUEUE</span>
+      </div>
+      <div class="card-name">Redis 7</div>
+      <div class="card-desc">n8n 작업 큐 & 캐시. Worker와 Main 인스턴스 간 작업 분배. 256MB 메모리 제한.</div>
+      <div class="card-footer">
+        <span class="card-port">:6379</span>
+        <span style="font-size:0.78rem; color:var(--muted)">내부 전용</span>
+      </div>
+    </div>
+
+    <div class="card" style="--card-color: #6366f1; cursor: default;">
+      <div class="card-header">
+        <div class="card-icon">⚙️</div>
+        <span class="card-badge">WORKER</span>
+      </div>
+      <div class="card-name">n8n Worker</div>
+      <div class="card-desc">워크플로우 실행 전담 프로세스. Redis 큐에서 작업을 꺼내 병렬 처리.</div>
+      <div class="card-footer">
+        <span class="card-port">내부</span>
+        <span style="font-size:0.78rem; color:var(--muted)">큐 모드</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Exporters -->
+  <div class="section-title">Prometheus Exporters</div>
+  <div class="grid">
+
+    <div class="card" style="--card-color: #a855f7; cursor: default;">
+      <div class="card-header">
+        <div class="card-icon">🖥️</div>
+        <span class="card-badge">SYSTEM</span>
+      </div>
+      <div class="card-name">Node Exporter</div>
+      <div class="card-desc">호스트 시스템 메트릭 수집. CPU 사용률, 메모리, 디스크 I/O, 네트워크.</div>
+      <div class="card-footer">
+        <span class="card-port">:9100</span>
+        <span style="font-size:0.78rem; color:var(--muted)">내부</span>
+      </div>
+    </div>
+
+    <div class="card" style="--card-color: #3b82f6; cursor: default;">
+      <div class="card-header">
+        <div class="card-icon">📈</div>
+        <span class="card-badge">MYSQL</span>
+      </div>
+      <div class="card-name">MySQL Exporter</div>
+      <div class="card-desc">MySQL 메트릭 수집. 쿼리 수, 연결 수, 슬로우 쿼리, 버퍼풀 사용량.</div>
+      <div class="card-footer">
+        <span class="card-port">:9104</span>
+        <span style="font-size:0.78rem; color:var(--muted)">내부</span>
+      </div>
+    </div>
+
+    <div class="card" style="--card-color: #ef4444; cursor: default;">
+      <div class="card-header">
+        <div class="card-icon">📉</div>
+        <span class="card-badge">REDIS</span>
+      </div>
+      <div class="card-name">Redis Exporter</div>
+      <div class="card-desc">Redis 메트릭 수집. 메모리 사용량, 키 수, 연결 수, 명령어 처리량.</div>
+      <div class="card-footer">
+        <span class="card-port">:9121</span>
+        <span style="font-size:0.78rem; color:var(--muted)">내부</span>
+      </div>
+    </div>
+
+    <div class="card" style="--card-color: #06b6d4; cursor: default;">
+      <div class="card-header">
+        <div class="card-icon">🐳</div>
+        <span class="card-badge">CONTAINER</span>
+      </div>
+      <div class="card-name">cAdvisor</div>
+      <div class="card-desc">Docker 컨테이너 메트릭 수집. 컨테이너별 CPU, 메모리, 네트워크 사용량.</div>
+      <div class="card-footer">
+        <span class="card-port">:8081</span>
+        <span style="font-size:0.78rem; color:var(--muted)">내부</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Credentials -->
+  <div class="section-title">접속 정보</div>
+  <div class="cred-table">
+    <table>
+      <thead>
+        <tr>
+          <th>서비스</th>
+          <th>URL</th>
+          <th>사용자</th>
+          <th>비밀번호</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="svc-dot" style="background:#6366f1"></span>n8n</td>
+          <td>http://localhost:5678</td>
+          <td>최초 실행 시 설정</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="svc-dot" style="background:#f97316"></span>Grafana</td>
+          <td>http://localhost:3001</td>
+          <td>admin</td>
+          <td>7345</td>
+        </tr>
+        <tr>
+          <td><span class="svc-dot" style="background:#22c55e"></span>Adminer</td>
+          <td>http://localhost:8080</td>
+          <td>root 또는 n8n</td>
+          <td>7345</td>
+        </tr>
+        <tr>
+          <td><span class="svc-dot" style="background:#ef4444"></span>Prometheus</td>
+          <td>http://localhost:9090</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td><span class="svc-dot" style="background:#3b82f6"></span>MySQL</td>
+          <td>localhost:3307</td>
+          <td>root 또는 n8n</td>
+          <td>7345</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Grafana Dashboard IDs -->
+  <div class="section-title">추천 Grafana 대시보드 (ID로 Import)</div>
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="info-label">Node Exporter Full</div>
+      <div class="info-value" style="font-size:1.2rem; color:#f97316">1860</div>
+      <div class="info-sub">시스템 리소스 전체</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">MySQL Overview</div>
+      <div class="info-value" style="font-size:1.2rem; color:#3b82f6">7362</div>
+      <div class="info-sub">MySQL 상세 메트릭</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Redis Dashboard</div>
+      <div class="info-value" style="font-size:1.2rem; color:#ef4444">11835</div>
+      <div class="info-sub">Redis 메트릭</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Docker Containers</div>
+      <div class="info-value" style="font-size:1.2rem; color:#06b6d4">893</div>
+      <div class="info-sub">컨테이너 모니터링</div>
+    </div>
+  </div>
+
+  <footer>
+    n8n Full Stack · Docker Compose · Zorin OS 18
+  </footer>
+
+</body>
+</html>
