@@ -1,0 +1,98 @@
+services:
+  # ============================================
+  # MariaDB - 데이터 저장소
+  # ============================================
+  mariadb:
+    image: mariadb:10.11
+    container_name: middle_mariadb
+    restart: always
+    environment:
+      - TZ=Asia/Seoul
+    env_file: .env
+    ports:
+      - "3307:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./mariadb/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - monitoring-net
+    healthcheck:
+      test: [ "CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ============================================
+  # n8n - 워크플로우 자동화 엔진
+  # ============================================
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: middle_n8n
+    restart: always
+    environment:
+      - GENERIC_TIMEZONE=Asia/Seoul
+      - TZ=Asia/Seoul
+      - N8N_SECURE_COOKIE=false
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - monitoring-net
+
+  # ============================================
+  # Flask API - 데이터 조회 서버
+  # ============================================
+  flask-api:
+    build: ./flask-api
+    container_name: middle_flask
+    restart: always
+    env_file: .env
+    environment:
+      - DB_HOST=mariadb
+      - DB_USER=monitor
+      - DB_PASSWORD=monitor1234
+      - DB_NAME=monitoring_db
+    ports:
+      - "5000:5000"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - monitoring-net
+
+  # ============================================
+  # Grafana - 데이터 시각화
+  # ============================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: middle_grafana
+    restart: always
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin1234
+      - GF_INSTALL_PLUGINS=
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    networks:
+      - monitoring-net
+
+volumes:
+  mariadb_data:
+  n8n_data:
+  grafana_data:
+
+
+networks:
+  monitoring-net:
+    driver: bridge

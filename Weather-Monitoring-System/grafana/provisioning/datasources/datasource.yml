@@ -1,0 +1,17 @@
+apiVersion: 1
+
+datasources:
+  - name: MariaDB
+    type: mysql
+    access: proxy
+    url: mariadb:3306
+    database: monitoring_db
+    user: monitor
+    isDefault: true
+    secureJsonData:
+      password: monitor1234
+    jsonData:
+      timezone: "Asia/Seoul"
+      connMaxLifetime: 14400
+      maxIdleConns: 3
+    editable: true

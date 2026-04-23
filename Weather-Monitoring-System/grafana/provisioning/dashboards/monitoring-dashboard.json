@@ -1,0 +1,630 @@
+{
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 1,
+    "id": null,
+    "links": [],
+    "panels": [
+        {
+            "title": "📊 현재 온도",
+            "type": "stat",
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 0,
+                "y": 0
+            },
+            "id": 1,
+            "datasource": {
+                "type": "mysql",
+                "uid": "P2ABB19EC46770D68"
+            },
+            "targets": [
+                {
+                    "dataset": "monitoring_db",
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT temperature AS value FROM sensor_data ORDER BY collected_at DESC LIMIT 1",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "blue",
+                                "value": null
+                            },
+                            {
+                                "color": "green",
+                                "value": 15
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 25
+                            },
+                            {
+                                "color": "orange",
+                                "value": 30
+                            },
+                            {
+                                "color": "red",
+                                "value": 35
+                            }
+                        ]
+                    },
+                    "unit": "celsius",
+                    "color": {
+                        "mode": "thresholds"
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "orientation": "auto",
+                "textMode": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "auto"
+            }
+        },
+        {
+            "title": "💧 현재 습도",
+            "type": "stat",
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 6,
+                "y": 0
+            },
+            "id": 2,
+            "datasource": {
+                "type": "mysql",
+                "uid": "P2ABB19EC46770D68"
+            },
+            "targets": [
+                {
+                    "dataset": "monitoring_db",
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT humidity AS value FROM sensor_data ORDER BY collected_at DESC LIMIT 1",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "orange",
+                                "value": null
+                            },
+                            {
+                                "color": "green",
+                                "value": 40
+                            },
+                            {
+                                "color": "blue",
+                                "value": 70
+                            }
+                        ]
+                    },
+                    "unit": "humidity",
+                    "color": {
+                        "mode": "thresholds"
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "orientation": "auto",
+                "textMode": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "auto"
+            }
+        },
+        {
+            "title": "🌬️ 현재 풍속",
+            "type": "stat",
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 12,
+                "y": 0
+            },
+            "id": 3,
+            "datasource": {
+                "type": "mysql",
+                "uid": "P2ABB19EC46770D68"
+            },
+            "targets": [
+                {
+                    "dataset": "monitoring_db",
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT wind_speed AS value FROM sensor_data ORDER BY collected_at DESC LIMIT 1",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 20
+                            },
+                            {
+                                "color": "red",
+                                "value": 40
+                            }
+                        ]
+                    },
+                    "unit": "velocitykmh",
+                    "color": {
+                        "mode": "thresholds"
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "orientation": "auto",
+                "textMode": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "auto"
+            }
+        },
+        {
+            "title": "🚨 총 Alert 건수",
+            "type": "stat",
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 18,
+                "y": 0
+            },
+            "id": 4,
+            "datasource": {
+                "type": "mysql",
+                "uid": "P2ABB19EC46770D68"
+            },
+            "targets": [
+                {
+                    "dataset": "monitoring_db",
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT COUNT(*) AS 'Alert 건수' FROM alert_log",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "orange",
+                                "value": 5
+                            },
+                            {
+                                "color": "red",
+                                "value": 10
+                            }
+                        ]
+                    },
+                    "color": {
+                        "mode": "thresholds"
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "orientation": "auto",
+                "textMode": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "auto"
+            }
+        },
+        {
+            "title": "🌡️ 온도 변화 추이",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 5
+            },
+            "id": 5,
+            "datasource": {
+                "type": "mysql",
+                "uid": "P2ABB19EC46770D68"
+            },
+            "targets": [
+                {
+                    "dataset": "monitoring_db",
+                    "editorMode": "code",
+                    "format": "time_series",
+                    "rawQuery": true,
+                    "rawSql": "SELECT collected_at AS time, temperature AS '온도' FROM sensor_data WHERE $__timeFilter(collected_at) ORDER BY collected_at",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "barAlignment": 0,
+                        "lineWidth": 2,
+                        "fillOpacity": 20,
+                        "gradientMode": "scheme",
+                        "spanNulls": false,
+                        "showPoints": "auto",
+                        "pointSize": 5
+                    },
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 30
+                            }
+                        ]
+                    },
+                    "unit": "celsius"
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "max",
+                        "min"
+                    ]
+                }
+            }
+        },
+        {
+            "title": "💧 습도 변화 추이",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 5
+            },
+            "id": 6,
+            "datasource": {
+                "type": "mysql",
+                "uid": "P2ABB19EC46770D68"
+            },
+            "targets": [
+                {
+                    "dataset": "monitoring_db",
+                    "editorMode": "code",
+                    "format": "time_series",
+                    "rawQuery": true,
+                    "rawSql": "SELECT collected_at AS time, humidity AS '습도' FROM sensor_data WHERE $__timeFilter(collected_at) ORDER BY collected_at",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "barAlignment": 0,
+                        "lineWidth": 2,
+                        "fillOpacity": 20,
+                        "gradientMode": "scheme",
+                        "spanNulls": false,
+                        "showPoints": "auto",
+                        "pointSize": 5
+                    },
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "unit": "humidity"
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "max",
+                        "min"
+                    ]
+                }
+            }
+        },
+        {
+            "title": "🌬️ 풍속 변화 추이",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 13
+            },
+            "id": 7,
+            "datasource": {
+                "type": "mysql",
+                "uid": "P2ABB19EC46770D68"
+            },
+            "targets": [
+                {
+                    "dataset": "monitoring_db",
+                    "editorMode": "code",
+                    "format": "time_series",
+                    "rawQuery": true,
+                    "rawSql": "SELECT collected_at AS time, wind_speed AS '풍속' FROM sensor_data WHERE $__timeFilter(collected_at) ORDER BY collected_at",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "bars",
+                        "barAlignment": 0,
+                        "lineWidth": 1,
+                        "fillOpacity": 50,
+                        "gradientMode": "scheme",
+                        "spanNulls": false,
+                        "showPoints": "never"
+                    },
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "unit": "velocitykmh"
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "max"
+                    ]
+                }
+            }
+        },
+        {
+            "title": "📊 전체 데이터 종합 (온도 + 습도 + 풍속)",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 13
+            },
+            "id": 8,
+            "datasource": {
+                "type": "mysql",
+                "uid": "P2ABB19EC46770D68"
+            },
+            "targets": [
+                {
+                    "dataset": "monitoring_db",
+                    "editorMode": "code",
+                    "format": "time_series",
+                    "rawQuery": true,
+                    "rawSql": "SELECT collected_at AS time, temperature AS '온도(°C)', humidity AS '습도(%)', wind_speed AS '풍속(km/h)' FROM sensor_data WHERE $__timeFilter(collected_at) ORDER BY collected_at",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "fillOpacity": 10,
+                        "showPoints": "auto",
+                        "pointSize": 4
+                    },
+                    "color": {
+                        "mode": "palette-classic"
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                },
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "max",
+                        "min",
+                        "lastNotNull"
+                    ]
+                }
+            }
+        },
+        {
+            "title": "🚨 최근 Alert 로그",
+            "type": "table",
+            "gridPos": {
+                "h": 8,
+                "w": 24,
+                "x": 0,
+                "y": 21
+            },
+            "id": 9,
+            "datasource": {
+                "type": "mysql",
+                "uid": "P2ABB19EC46770D68"
+            },
+            "targets": [
+                {
+                    "dataset": "monitoring_db",
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT id, metric_name AS '측정항목', metric_value AS '측정값', threshold AS '임계값', message AS '메시지', alerted_at AS '발생시각' FROM alert_log WHERE $__timeFilter(alerted_at) ORDER BY alerted_at DESC LIMIT 50",
+                    "refId": "A"
+                }
+            ],
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "측정값"
+                        },
+                        "properties": [
+                            {
+                                "id": "custom.cellOptions",
+                                "value": {
+                                    "type": "color-text"
+                                }
+                            },
+                            {
+                                "id": "thresholds",
+                                "value": {
+                                    "mode": "absolute",
+                                    "steps": [
+                                        {
+                                            "color": "green",
+                                            "value": null
+                                        },
+                                        {
+                                            "color": "red",
+                                            "value": 30
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "options": {
+                "showHeader": true,
+                "cellHeight": "sm",
+                "footer": {
+                    "show": true,
+                    "reducer": [
+                        "count"
+                    ],
+                    "countRows": true
+                }
+            }
+        }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 39,
+    "tags": [
+        "monitoring",
+        "weather",
+        "auto-provisioned"
+    ],
+    "templating": {
+        "list": []
+    },
+    "time": {
+        "from": "now-24h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "Asia/Seoul",
+    "title": "🌤️ 날씨 모니터링 대시보드",
+    "uid": "weather-monitoring-dashboard",
+    "version": 1,
+    "weekStart": ""
+}

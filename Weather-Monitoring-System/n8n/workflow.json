@@ -1,0 +1,206 @@
+{
+    "name": "날씨 데이터 자동 수집 워크플로우",
+    "nodes": [
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "minutes",
+                            "minutesInterval": 5
+                        }
+                    ]
+                }
+            },
+            "id": "a1b2c3d4-0001-4000-8000-000000000001",
+            "name": "5분마다 실행",
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                250,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "url": "https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.978&current=temperature_2m,relative_humidity_2m,wind_speed_10m",
+                "options": {}
+            },
+            "id": "a1b2c3d4-0002-4000-8000-000000000002",
+            "name": "날씨 API 호출",
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                480,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "jsCode": "// Open-Meteo API 응답에서 데이터 파싱\nconst response = $input.first().json;\nconst current = response.current;\n\nconst temperature = current.temperature_2m;\nconst humidity = current.relative_humidity_2m;\nconst windSpeed = current.wind_speed_10m;\n\n// MySQL DATETIME 형식으로 변환\nconst now = new Date();\nconst collectedAt = now.getFullYear() + '-' + \n  String(now.getMonth() + 1).padStart(2, '0') + '-' + \n  String(now.getDate()).padStart(2, '0') + ' ' + \n  String(now.getHours()).padStart(2, '0') + ':' + \n  String(now.getMinutes()).padStart(2, '0') + ':' + \n  String(now.getSeconds()).padStart(2, '0');\n\nreturn [{\n  json: {\n    temperature: temperature,\n    humidity: humidity,\n    wind_speed: windSpeed,\n    source: 'open-meteo-seoul',\n    collected_at: collectedAt\n  }\n}];"
+            },
+            "id": "a1b2c3d4-0003-4000-8000-000000000003",
+            "name": "데이터 파싱",
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                710,
+                300
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "=INSERT INTO sensor_data (temperature, humidity, wind_speed, source, collected_at) VALUES ({{ $json.temperature }}, {{ $json.humidity }}, {{ $json.wind_speed }}, '{{ $json.source }}', '{{ $json.collected_at }}')"
+            },
+            "id": "a1b2c3d4-0004-4000-8000-000000000004",
+            "name": "DB에 데이터 저장",
+            "type": "n8n-nodes-base.mySql",
+            "typeVersion": 2.4,
+            "position": [
+                940,
+                200
+            ],
+            "credentials": {
+                "mySql": {
+                    "id": "CREDENTIAL_ID",
+                    "name": "MariaDB Monitoring"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict"
+                    },
+                    "conditions": [
+                        {
+                            "id": "condition-temperature",
+                            "leftValue": "={{ $json.temperature }}",
+                            "rightValue": 30,
+                            "operator": {
+                                "type": "number",
+                                "operation": "gt"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "id": "a1b2c3d4-0005-4000-8000-000000000005",
+            "name": "온도 30도 초과 확인",
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2,
+            "position": [
+                940,
+                420
+            ]
+        },
+        {
+            "parameters": {
+                "operation": "executeQuery",
+                "query": "=INSERT INTO alert_log (metric_name, metric_value, threshold, message) VALUES ('temperature', {{ $json.temperature }}, 30, '온도 임계값 초과: {{ $json.temperature }}°C (기준: 30°C)')"
+            },
+            "id": "a1b2c3d4-0006-4000-8000-000000000006",
+            "name": "Alert 기록",
+            "type": "n8n-nodes-base.mySql",
+            "typeVersion": 2.4,
+            "position": [
+                1180,
+                380
+            ],
+            "credentials": {
+                "mySql": {
+                    "id": "CREDENTIAL_ID",
+                    "name": "MariaDB Monitoring"
+                }
+            }
+        },
+        {
+            "parameters": {},
+            "id": "a1b2c3d4-0007-4000-8000-000000000007",
+            "name": "완료 (Alert 없음)",
+            "type": "n8n-nodes-base.noOp",
+            "typeVersion": 1,
+            "position": [
+                1180,
+                520
+            ]
+        }
+    ],
+    "connections": {
+        "5분마다 실행": {
+            "main": [
+                [
+                    {
+                        "node": "날씨 API 호출",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "날씨 API 호출": {
+            "main": [
+                [
+                    {
+                        "node": "데이터 파싱",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "데이터 파싱": {
+            "main": [
+                [
+                    {
+                        "node": "DB에 데이터 저장",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "온도 30도 초과 확인",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "온도 30도 초과 확인": {
+            "main": [
+                [
+                    {
+                        "node": "Alert 기록",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "완료 (Alert 없음)",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": false,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "versionId": "1",
+    "meta": {
+        "instanceId": "middle-test-project"
+    },
+    "tags": [
+        {
+            "name": "monitoring"
+        }
+    ]
+}
